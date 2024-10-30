@@ -8,7 +8,6 @@ from queue import Queue
 from logging.config import dictConfig
 from logging.handlers import TimedRotatingFileHandler
 from os.path import dirname
-
 @dataclass
 class LogConfig:
     version : int
@@ -21,6 +20,11 @@ class LogConfig:
     log_name : str
     log_extension : str
 
+
+'''
+Will load logging information from file or will create one with the template data
+Values are saved in json format
+'''
 
 try:
     template = """{
@@ -64,7 +68,7 @@ try:
         "level": "DEBUG"
     }
 }"""
-
+    # Be sure that the class path in the template match with the project structure
     config = json_config.load_json_config('./data/logger_config.json', template)
     for handler in config['handlers'].values():
         if 'filename' in handler.keys():
@@ -75,10 +79,12 @@ except Exception as error:
 
 
 def logger_setup(logger: logging.Logger | None, log_queue: Queue | None=None):
+    '''
+    Get logger object and returns it with the configuration values loaded previously
+    '''
     try:
         dictConfig(config)
         if not log_queue == None:
-            # logger = add_log_queuer(logger, log_queue)
             logger = add_handler(logger, LogQueuer, log_queue)
     except Exception as error:
         print(error)
@@ -86,6 +92,10 @@ def logger_setup(logger: logging.Logger | None, log_queue: Queue | None=None):
 
 
 def add_handler(current_logger=logging.Logger, handler_class=logging.Handler, log_queue=None | Queue):
+    '''
+    Add a log queue type handler
+    This is used for GUI with loggings display features
+    '''
     formatter =''
     level = ''
     for handler in current_logger.handlers:
@@ -146,6 +156,9 @@ class TextHandler(logging.Handler):
         self.text.after(0, append)    
 
 class LogQueuer(logging.Handler):
+    '''
+    Custom handler for LogQueue
+    '''
     def __init__(self, log_queue=Queue()) -> None:
         logging.Handler.__init__(self)
         self.log_queue = log_queue
@@ -163,6 +176,12 @@ class TimeStampedFileHandler(logging.FileHandler):
         super().__init__(filename, mode, encoding, delay, errors)
 
 class TimedRotatingFileHandlerCustomNamer(TimedRotatingFileHandler):
+    '''
+    Custom TumedRotatingFileHandler
+    It names the log file by the selected interval within the rotation
+    Ex: log.log > 
+        By daily rotation the file will be named as logXXXXXX.log
+    '''
     def __init__(self, filename: str, when: str = "h", interval: int = 1, backupCount: int = 0, encoding: str | None = None, delay: bool = False, utc: bool = False, atTime: None = None, errors: str | None = None) -> None:
         extension = filename.split('.')[-1]
         self.namer = lambda filename : f'{filename.replace(f".{extension}", "")}.{extension}'

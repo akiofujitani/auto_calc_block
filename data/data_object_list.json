@@ -1,10 +1,6 @@
 {
-    "configuration": {
+    "config": {
         "file_path": "./data/config.json",
         "class_object": "Configuration"
-    },
-    "job_list": {
-        "file_path": "./data/job_list.json",
-        "class_object": "JobList"
     }
 }

@@ -1,4 +1,4 @@
-import json, os, logging
+import json, logging
 from os.path import exists, normpath, dirname
 from os import makedirs
 
@@ -10,7 +10,7 @@ logger = logging.getLogger('json_config')
 def load_json_config(config_file=str, template_data=None) -> dict:
     '''
     load json file and transforms it in dictionary
-    the template_data  
+    if file doesn't exists data will be loaded from the template_data  
     '''
     norm_config_file = normpath(config_file)
     if exists(norm_config_file):
@@ -29,6 +29,9 @@ def load_json_config(config_file=str, template_data=None) -> dict:
 
 
 def save_json_config(config_file=str, json_config=dict) -> None:
+    '''
+    save dictionary to json format
+    '''
     with open(config_file, 'w') as json_file:
         json.dump(json_config, json_file, indent=4)
     return

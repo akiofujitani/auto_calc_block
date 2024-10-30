@@ -1,178 +1,159 @@
 import logging
-from tkinter import Menu
-from tkinter.messagebox import askokcancel, showerror, askquestion
+from tkinter import Menu, Frame, Toplevel, Tk, END
+from tkinter.messagebox import askokcancel
 from queue import Queue
-from datetime import datetime, timedelta
-from model.main import Model
-from model.classes.config import Configuration
-from model.scripts.file_handler import resource_path, file_writer
-from view.about import About
-from view.settings import Setting
+from pystray import MenuItem, Icon
 from view.main_view import MainView
+from view.about import About
+from view.settings import Settings
 from controller.about_controller import AboutController
-from controller.settings_controller import SetttingsController
-from controller.validation_controller import int_validate
-
+from controller.settings_controller import SettingsController
+from model.main import Model
+from model.scripts.file_handler import resource_path
 
 logger = logging.getLogger('main_view_controller')
 
 
 class MainViewController:
-    def __init__(self, main_view: MainView, model: Model, log_queue: Queue) -> None:
-        self.frame = main_view
-        self.master = self.frame.master
+    """
+    MainViewController
+    ------------------
+
+    Attributes
+        - main: MainView
+        - model: Model
+        - log_queue: Queue    
+    """
+
+    def __init__(self, main: MainView, model: Model, log_queue: Queue) -> None:
+        self.main = main
         self.model = model
+        self.master = main.master
         self.gui_configuration = self.model.gui_configuration
-        self.database = self.model.database
-        self.configuration = self.database.get('configuration')
-        self.job_block_list = self.database.get('job_list')
+        self.configuration = self.model.database.get('config')
         self.log_queue = log_queue
-        self.entry_job = self.frame.entry_job
-        self.button_send = self.frame.button_send
-        self.button_settings = self.frame.button_setting
+        self.console_logging = ConsoleLogging(log_queue, self.main, self.master)
+        self.tray_menu = (MenuItem('Restore', self.__show_window), MenuItem('Quit', self.__quit))
 
-        self.treeview = self.frame.treeview
-        for column in self.frame.columns:
-            self.treeview.heading(column, command=lambda column_value=column: self.__sort_tree_view(column_value, False))  
-        self.treeview.bind('<3>', self.do_popup)
-        self.entry_job.bind('<Return>', self.__send)
-
-        menu_bar = Menu(self.frame)
+        menu_bar = Menu(self.main)
         file_menu = Menu(menu_bar, tearoff=0)
-        file_menu.add_command(label='Send   ', command=self.__send)
-        file_menu.add_command(label='Update   ', command=self.__update)
+        file_menu.add_command(label='Start   ', command=self.__start)
+        file_menu.add_command(label='Stop    ', command=self.__stop)        
         file_menu.add_separator()
         file_menu.add_command(label='Exit   ', command=self.__quit)
 
-        edit_menu = Menu(menu_bar, tearoff=0)
-        edit_menu.add_command(label='Setting   ', command=self.__setting)
+        settings_menu = Menu(menu_bar, tearoff=0)
+        settings_menu.add_command(label='Settings  ', command=self.__settings)
 
         help_menu = Menu(menu_bar, tearoff=0)
-        help_menu.add_command(label='About  ', command=self.__about)
-
+        help_menu.add_command(label='About   ', command=self.__about)
         menu_bar.add_cascade(label='File   ', menu=file_menu)
-        menu_bar.add_cascade(label='Edit   ', menu=edit_menu)
+        menu_bar.add_cascade(label='Settings   ', menu=settings_menu)    
         menu_bar.add_cascade(label='Help   ', menu=help_menu)
 
         self.master.config(menu=menu_bar)
-        self.master.protocol('WM_DELETE_WINDOW', self.__quit)
+        self.master.protocol('WM_DELETE_WINDOW', self.__hide_window_to_tray)
+        # self.master.after(100, self.__pull_log)  
+        self.main.start_button.config(command=self.__start)
+        self.main.stop_button.config(command=self.__stop)
+        self.main.config_button.config(command=self.__settings)
 
-        self.button_send.config(command=self.__send)
-        self.button_settings.config(command=self.__setting)
+        if self.configuration.start_min:
+            self.__hide_window_to_tray()
 
-        self.int_vcmd = (self.master.register(int_validate), 
-                        '%d', '%i', '%P', '%s', '%S', '%v', '%V', '%W')
-        self.entry_job.config(validate='key', validatecommand=self.int_vcmd)
+    def __start(self):
+        logger.debug('Start')
+        self.model.start_routine()
 
-        self.job_block_list.remove_older_than(self.__set_removal_date())
-        if len(self.job_block_list.job_list) > 0:
-            self.set_treeview()
+    def __stop(self):
+        logger.debug('Stop')
+        self.model.stop_routine()
 
-        self.popup = Menu(self.frame, tearoff=0)
-        self.popup.add_command(label='Delete  ', command=self.__delete)
-        self.popup.add_separator()
-
-
-    def __sort_tree_view(self, colum_value, descending):
-        r'''
-        https://www.w3resource.com/python-exercises/tkinter/python-tkinter-widgets-exercise-18.php
+    def __settings(self):
         '''
-        tree_view_data = [(self.treeview.set(item, colum_value), item) for item in self.treeview.get_children('')]
-        if colum_value == 'insertion_date':
-            tree_view_data = [(datetime.strptime(treeview_date[0], "%d/%m/%Y %H:%M:%S"), treeview_date[1]) for treeview_date in tree_view_data]
-        tree_view_data.sort(reverse=descending)
-        even_odd = {0 : 'evenrow', 1 : 'oddrow'}
-        for index, (_, item) in enumerate(tree_view_data):
-            self.treeview.move(item, '', index)
-            self.treeview.item(item, tags=(even_odd.get(index % 2)))
-        self.treeview.heading(colum_value, command=lambda: self.__sort_tree_view(colum_value, not descending))
+        Settings
+        --------
 
-    def do_popup(self, event=None) -> None:
-        row_id =self.treeview.identify('item', event.x, event.y)
-        if row_id:
-            self.treeview.selection_set(row_id)
-            self.treeview.focus_set()
-            self.treeview.focus(row_id)            
-            self.popup.post(event.x_root, event.y_root)
+        Open settings window
+        '''
+        self.model.stop_routine()
+        self.settings = Settings(self.master)
+        self.settings_controller = SettingsController(self.settings, self.model.database, self.gui_configuration)
+        logger.debug('Settings')
 
-    def __set_removal_date(self) -> datetime:
-        date_to_remove = datetime.today().date() - timedelta(self.configuration.days_to_keep)
-        return datetime(date_to_remove.year, date_to_remove.month, date_to_remove.day)
-
-    def set_treeview(self) -> None:
-        even_odd = {0: 'evenrow', 1: 'oddrow'}
-        self.treeview.delete(*self.treeview.get_children())
-        if len(self.job_block_list.job_list) > 0:
-            for i, job_value in enumerate(self.job_block_list.job_list):
-                self.treeview.insert('', 'end', values=(job_value.job_number, f'{datetime.strftime(job_value.insertion_date, "%d/%m/%Y %H:%M:%S")}'), tags=(even_odd.get(i % 2)))
-
-    def __insert_job(self, job_number: int) -> None:
-        result = self.job_block_list.add_job(job_number)
-        if result:
-            self.database.save_update('job_list', self.job_block_list)
-            self.__update_job_list()
-        else:
-            showerror('Send error', f'Could not add {job_number} to job block list')
-
-    def __delete(self) -> None:
-        logger.debug('Delete')
-        row_id = self.treeview.selection()
-        if row_id:
-            treeview_item = self.treeview.item(row_id)
-            selected_job = treeview_item.get('values')[0]
-            answer = askquestion('Delete', f'Do you really want to delete the entry {selected_job}')
-            if answer == 'yes':
-                if self.job_block_list.remove_job(selected_job):
-                    self.database.save_update('job_list', self.job_block_list)                
-                    self.__update_job_list()
-                    
-    def __update_job_list(self) -> None:
-        self.configuration = self.database.get('configuration')
-        try:
-            file_name = f'{self.configuration.file_name}.{self.configuration.file_extension}'
-            file_writer(self.configuration.file_path, file_name, '\n'.join([str(job_num) for job_num in self.job_block_list.get_job_list()]))
-            self.set_treeview()
-        except Exception as error:
-            logger.error(f'Could not update job list due {error}')
-            showerror('Update Error', f'Could not update job list due {error}.')
-
-    def __send(self, event=None) -> None:
-        logger.debug('Send')
-        job_number = self.entry_job.get()
-        if len(str(job_number)) >= self.configuration.job_minimum_length:
-            self.entry_job.delete(0, 'end')
-            self.__insert_job(job_number)
-        else:
-            self.entry_job.focus_force()
-            self.entry_job.select_range(0, 'end')
-
-    def update_configuration(self, new_config: Configuration) -> None:
-        if new_config:
-            self.configuration = new_config
-
-    def __update(self):
-        self.job_block_list.remove_older_than(self.__set_removal_date())
-        self.database.save_update('job_list', self.job_block_list)
-        self.__update_job_list()
-
-    def __quit(self, event=None) -> None:
+    def __quit(self):
         if askokcancel('Quit', 'Do you want to quit?'):
             self.gui_configuration.check_update_win_pos(self.master.geometry(), 'main')
+            self.model.on_close() 
+            try:
+                self.tray_icon.stop()
+            except:
+                logger.warning('Application in normal mode')
             logger.info('Forcing kill thread if it is open')                
             self.master.after(0, self.master.deiconify)      
             self.master.destroy()
 
-    def __setting(self, event=None) -> None:
-        logger.debug('Setting')        
-        setting_view = Setting(self.master)
-        self.setting_controller = SetttingsController(setting_view, self.update_configuration, self.database, self.gui_configuration)
-
-    def __about(self, event=None) -> None:
+    def __about(self):
         logger.info('About clicked')
         about = About('''
-            Application name: Automatic Calculation Blocker
-            Version: 1.10.00
+            Application name: Print Manager
+            Version: 1.00.00
             Developed by: Akio Fujitani
             e-mail: akiofujitani@gmail.com
         ''', resource_path('./Img/bedo_mora_siris.png'))
         self.about_controller = AboutController(self.master, about, self.gui_configuration)
+
+    def __show_window(self) -> None:
+        self.tray_icon.stop()
+        self.master.after(50, self.master.deiconify)
+
+    def __hide_window_to_tray(self) -> None:
+        self.__start()
+        window_close_list = []
+        for children in self.master.children:
+            if isinstance(self.master.children[children], Toplevel):
+                window_close_list.append(children)
+        for children in window_close_list:
+            self.master.children[children].destroy()
+        logger.debug('Run tray icon')
+        self.master.withdraw()
+
+        self.tray_icon = Icon('Tkinter GUI', self.main.icon, 
+                              'Print Manager', self.tray_menu)
+        self.tray_icon.run()
+
+class ConsoleLogging:
+    '''
+    ConsoleLogging
+    --------------
+
+    Class for logging display.
+
+    Attributes
+        - log_queue
+        - main_frame
+        - master
+    
+    '''
+    def __init__(self, log_queue: Queue, main_frame: Frame, master: Tk) -> None:
+        self.main = main_frame
+        self.master = master
+        self.log_queue = log_queue
+        self.master.after(100, self.__pull_log)  
+
+    def __pull_log(self) -> None:
+        message = ''
+        while not self.log_queue.empty():
+            message += f'{self.log_queue.get(block=False)}\n' 
+        if message:
+            self.__display(message)
+        self.master.after(100, self.__pull_log)
+
+    def __display(self, message) -> None:
+        self.main.scrolled_text.configure(state='normal')
+        line_count = int(float(self.main.scrolled_text.index('end')))
+        if line_count > 500:
+            self.main.scrolled_text.delete('1.0', str("{:0.1f}".format(line_count - 499)))
+        self.main.scrolled_text.insert(END, f'{message}')
+        self.main.scrolled_text.configure(state='disabled')
+        self.main.scrolled_text.yview(END)

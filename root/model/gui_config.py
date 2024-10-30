@@ -35,7 +35,7 @@ class GuiConfiguration:
         return TtkGeometry(int(win_size[0]), int(win_size[1]), int(size_pos[1]), int(size_pos[2]))
 
     def check_update_win_pos(self, geometry_str:str, win_name: str) -> str:
-        r'''
+        '''
         Get win position in configuration object
         '''
         try:
@@ -58,7 +58,7 @@ class GuiConfiguration:
             raise error
 
     def check_win_pos(self, win_name: str) -> str:
-        r'''
+        '''
         Get win position in configuration object
         '''
         try:
@@ -72,7 +72,7 @@ class GuiConfiguration:
             raise error
 
     def save_config_on_change(self):
-        r'''
+        '''
         Save to configuration file if it has changes
         '''
         try:

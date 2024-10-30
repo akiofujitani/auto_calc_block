@@ -10,6 +10,9 @@ logger = logging.getLogger('main')
 
 
 def main():
+    """
+    Main function
+    """
     log_queue = Queue()
     logger = logging.getLogger()
     logger_setup(logger, log_queue)

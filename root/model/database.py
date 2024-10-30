@@ -1,17 +1,16 @@
 import logging
 from enum import Enum
-from datetime import datetime
+from datetime import datetime, time
 from . import templates
 from .scripts.json_config import save_json_config, load_json_config
 from .classes.config import Configuration
-from .classes.job_block import JobBlock, JobList
 
 
 logger = logging.getLogger('configuration')
 
 
 class DataObject:
-    r'''
+    '''
     DataObject
     ----------
 
@@ -44,7 +43,18 @@ class DataObject:
 
 
 class DataObjectList:
-    def __init__(self, data_object_dict: dict) -> None:
+    '''
+    DataObjectList
+    ----------
+    Store list of configuration objects
+    
+    Args
+        - data_object_dict (dict[str, object])
+
+    Methods
+        - init_dict (classmethod)
+    '''    
+    def __init__(self, data_object_dict: dict[str, object]) -> None:
         self.data_object_dict = data_object_dict
     
     def __eq__(self, __o: object) -> bool:
@@ -66,15 +76,35 @@ class DataObjectList:
 
 
 class Database:
-    def __init__(self, config_dict: dict, config_path: dict) -> None:
+    '''
+    Database
+    ----------
+
+    Store all the configuration values for the proper software execution
+    
+    Args
+        - config (dict[str, object])
+        - config_path (dict[str, str])
+        - last_modify (datetime)
+
+    Methods
+        - init_dict (classmethod)
+    '''
+    def __init__(self, config_dict: dict[str, object], config_path: dict[str, str]) -> None:
         self.config = config_dict
         self.config_path = config_path
         self.last_modify = datetime.now()    
 
     def get(self, object_name):
+        '''
+        get object base on dictionary key
+        '''
         return self.config.get(object_name)
 
     def save_update(self, table: str, value: object):
+        '''
+        save/update object
+        '''
         table_path = self.config_path.get(table)
         value_dict = self.to_dict(value)
         if not load_json_config(table_path, None).__eq__(value_dict):
@@ -83,6 +113,9 @@ class Database:
         self.config[table] = value
 
     def check_table_difference(self, table: str, value: object) -> bool:
+        '''
+        check object new and old values 
+        '''
         table_path = self.config_path.get(table)
         value_dict = self.to_dict(value)    
         if load_json_config(table_path, None).__eq__(value_dict):
@@ -90,15 +123,10 @@ class Database:
         return False
 
     @classmethod
-    def __get_object(cls, object_name: str) -> object:
-        match object_name:
-            case 'Configuration':
-                return Configuration
-            case 'JobList':
-                return JobList
-
-    @classmethod
     def to_dict(cls, any_value: any):
+        '''
+        Transform given value to string type
+        '''
         try:
             if isinstance(any_value, dict):
                 dict_values = {}            
@@ -123,6 +151,8 @@ class Database:
                 return str(any_value.value)
             elif isinstance(any_value, datetime):
                 return datetime.strftime(any_value, '%Y/%m/%d %H:%M:%S')
+            elif isinstance(any_value, time):
+                return str(f'{any_value.hour:02d}:{any_value.minute:02d}:{any_value.second:02d}')
             elif any_value == None or any_value == '':
                 return ''
             else: 
@@ -130,6 +160,12 @@ class Database:
         except Exception as error:
             logger.error(f'{error}')
             raise error
+
+    @classmethod
+    def __get_object(cls, object_name: str) -> object:
+        match object_name:
+            case 'Configuration':
+                return Configuration
 
     @classmethod
     def init_dict(cls, object_list: dict[DataObject]) -> object:

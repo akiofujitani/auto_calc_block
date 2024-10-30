@@ -4,14 +4,14 @@ from PIL.ImageTk import PhotoImage
 
 
 class About(Toplevel):
-    r'''
+    '''
     About Window
     ------------
 
     Meant to store development information
     '''    
     def __init__(self, label_values: str, image_file: str, *args, **kwargs) -> None:
-        r'''
+        '''
         About Window
         ------------
 

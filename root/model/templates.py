@@ -1,3 +1,7 @@
+'''
+Store the templates values of the configuration files
+'''
+
 gui_configuration = '''
 {
     "alwais_on_top" : "false",
@@ -7,29 +11,28 @@ gui_configuration = '''
 
 data_object_list = '''
 {
-    "configuration": {
+    "config": {
         "file_path": "./data/config.json",
         "class_object": "Configuration"
-    },
-    "job_list": {
-        "file_path": "./data/job_list.json",
-        "class_object": "JobList"
     }
 }
 '''
 
-job_list = '''
+config = '''
 {
-
-}
-'''
-
-configuration = '''
-{
-    "file_path": "./",
-    "file_name": "job_list",
-    "file_extension": "json",
-    "job_minimum_length" : "7",
-    "days_to_keep": "30"
+    "source_path": "",
+    "destin_path":  "",
+    "print_program": "./FoxitReader.exe",
+    "print_command": "-t",
+    "extension": "pdf",
+    "printer_list" : [
+        "Microsoft Print to PDF"
+    ],
+    "wait_time": "10",
+    "print_interval": "3",
+    "start_delay": "20",
+    "start_min" : "0",
+    "print_start_time": "00:00:00",
+    "print_end_time": "23:59:59"
 }
 '''

@@ -1,0 +1,7 @@
+{
+    "file_path": ".",
+    "file_name": "job_list",
+    "file_extension": "json",
+    "job_minimum_length": "7",
+    "days_to_keep": "15"
+}

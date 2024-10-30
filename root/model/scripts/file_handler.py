@@ -5,7 +5,7 @@ logger = logging.getLogger('file_handler')
 
 
 def file_list(path=str, file_extention=str) -> list:
-    r'''
+    '''
     List files ended with choosen extension inside one directory
     '''
     if not os.path.exists(path):
@@ -15,7 +15,7 @@ def file_list(path=str, file_extention=str) -> list:
 
 
 def listFilesInDirSubDir(pathRoot: str, extention: str='') -> list:
-    r'''
+    '''
     List files ended with choosen extension inside all directories inside the path
     '''
     fileList = []
@@ -29,7 +29,7 @@ def listFilesInDirSubDir(pathRoot: str, extention: str='') -> list:
 
 
 def fileListFullPath(path, file_extention) -> list:
-    r'''
+    '''
     List files returning the full path list ended with choosen extension inside one directory
     '''    
     if not os.path.exists(path):
@@ -39,7 +39,7 @@ def fileListFullPath(path, file_extention) -> list:
 
 
 def __csv_reader(file_path: str,  delimeter_char: str, case_upper: bool=True, quoting: csv.Dialect=csv.QUOTE_NONE, encoding: str='utf-8'):
-    r'''
+    '''
     Auxiliary method for CSVtoList
     '''
     with open(file_path, encoding=encoding) as csv_file:
@@ -66,7 +66,7 @@ def __csv_reader(file_path: str,  delimeter_char: str, case_upper: bool=True, qu
 
 
 def csv_to_list(filePath: str, delimeter_char: str='\t', case_upper: bool=True, quoting: csv.Dialect=csv.QUOTE_NONE) -> list:
-    r'''
+    '''
     Get csv file, read and convert it to list of dictionaries
     '''
     file_path = os.path.normpath(os.path.abspath(filePath))
@@ -89,7 +89,7 @@ def csv_to_list(filePath: str, delimeter_char: str='\t', case_upper: bool=True, 
 
 
 def __detect_encode(file_path):
-    r'''
+    '''
     Auxiliary method for CSVoList
     Try to detect the encoding type
     '''
@@ -100,7 +100,7 @@ def __detect_encode(file_path):
 
 
 def listToCSV(valuesList, filePath) -> None:
-    r'''
+    '''
     Convert list to CSV using first line as header
     '''
     with open(filePath, 'w', newline='') as csvFile:
@@ -112,7 +112,7 @@ def listToCSV(valuesList, filePath) -> None:
 
 
 def file_finder(file_list: list, file_name: str, start_pos: int=0, end_pos: None=None) -> str:
-    r'''
+    '''
     Search file in list by partial name with start en end position 
     '''
     logger.info(f'Searching for file {file_name}')
@@ -255,7 +255,7 @@ def check_create_dir(path: str) -> str:
 
 
 def file_list_last_date(path: str, extension: str, pattern_removal: str, date_pattern: str) -> datetime.datetime.date:
-    r'''
+    '''
     Retrieves the last defined data in file list.
     This don't retrieves the creattion date, its the date defined in the file name
     '''
@@ -316,7 +316,7 @@ def fileCreationDate(file):
 
 
 def listFilesInDirSubDirWithDate(pathRoot: str, extention: str='') -> list:
-    r'''
+    '''
     List files ended with choosen extension inside all directories inside the path
     '''
     fileList = []
@@ -333,7 +333,7 @@ def listFilesInDirSubDirWithDate(pathRoot: str, extention: str='') -> list:
 
 
 def listFilesInDirSubDirByDate(pathRoot: str, extention: str='') -> dict:
-    r'''
+    '''
     List files ended with choosen extension inside all directories inside the path
     '''
     file_dict_date = {}

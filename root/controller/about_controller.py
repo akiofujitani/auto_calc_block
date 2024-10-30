@@ -6,6 +6,12 @@ logger = logging.getLogger('about_contoller')
 
 
 class AboutController:
+    '''
+    AboutController
+    ---------------
+
+    Controller for About GUI
+    '''
     def __init__(self, master_win: Tk, about: Toplevel, gui_configuration: GuiConfiguration) -> None:
         self.gui_configuration = gui_configuration
         self.about = about
@@ -21,6 +27,9 @@ class AboutController:
         self.about.protocol('WM_DELETE_WINDOW', self.__on_window_close)    
     
     def destroy(self) -> None:
+        '''
+        Destory GUI and save its position and size
+        '''
         if self.last_grab:
             self.last_grab.grab_set()
         self.gui_configuration.check_update_win_pos(self.about.geometry(), 'about')
